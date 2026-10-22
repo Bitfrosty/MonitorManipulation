@@ -144,18 +144,36 @@ void PowerMonitor()
 
     DWORD value = (action == "on") ? powerOn : powerOff;
 
-    if (SetVCPFeature(
-        monitors[selectedIndex].hPhysicalMonitor,
-        powerCode,
-        value)) {
+    BOOL success = FALSE;
+    constexpr int maxAttempts = 3;
+
+    for (int attempt = 1; attempt <= maxAttempts; ++attempt) {
+        success = SetVCPFeature(
+            monitors[selectedIndex].hPhysicalMonitor,
+            powerCode,
+            value);
+
+        if (success)
+            break;
+
+        DWORD error = GetLastError();
+
+        std::cerr
+            << "Attempt " << attempt
+            << " failed. Windows error: " << error
+            << " (0x" << std::hex << error << std::dec << ")\n";
+
+        if (attempt < maxAttempts)
+            Sleep(250);
+    }
+
+    if (success) {
         std::cout << "Power command sent.\n";
     }
     else {
-        DWORD error = GetLastError();
-
-        std::cout
-            << "Power command failed. Windows error: "
-            << error << "\n";
+        std::cerr
+            << "Failed to send monitor power command after "
+            << maxAttempts << " attempts.\n";
     }
 
     ReleaseMonitors(monitors);
