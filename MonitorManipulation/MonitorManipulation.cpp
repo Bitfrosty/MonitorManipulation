@@ -1,11 +1,9 @@
 #include <iostream>
 #include <string>
 #include <vector>
-//finding monitors and controlling settings
 #include <windows.h>
 #include <physicalmonitorenumerationapi.h>
 #include <lowlevelmonitorconfigurationapi.h>
-
 
 #pragma comment(lib, "User32.lib")
 #pragma comment(lib, "Dxva2.lib")
@@ -41,18 +39,14 @@ BOOL CALLBACK CollectMonitors(
     return TRUE;
 }
 
-//enumerates display monitors and retrieves physical monitor handles
 std::vector<PHYSICAL_MONITOR> GetMonitors()
 {
     std::vector<PHYSICAL_MONITOR> monitors;
-    //creates a vector and asks Windoes to enumerate monitors
+
     EnumDisplayMonitors(
-        //enumerations without a specific device cont4
         nullptr,
         nullptr,
-        //call for each monitor
         CollectMonitors,
-        //passes the address of the vector through Windows so the callback can fill it
         reinterpret_cast<LPARAM>(&monitors));
 
     return monitors;
@@ -93,19 +87,12 @@ void DisplayMonitors()
     ReleaseMonitors(monitors);
 }
 
-void PowerMonitor()
+void PowerMonitor(const std::string& selection, const std::string& action)
 {
     auto monitors = GetMonitors();
-    PrintMonitors(monitors);
 
-    if (monitors.empty())
-        return;
-
-    std::string selection;
-    std::cout << "Select a monitor number: ";
-
-    if (!(std::cin >> selection)) {
-        ReleaseMonitors(monitors);
+    if (monitors.empty()) {
+        std::wcout << L"No monitors found.\n";
         return;
     }
 
@@ -124,16 +111,8 @@ void PowerMonitor()
         return;
     }
 
-    std::string action;
-    std::cout << "Enter on or off: ";
-
-    if (!(std::cin >> action)) {
-        ReleaseMonitors(monitors);
-        return;
-    }
-
     if (action != "on" && action != "off") {
-        std::cout << "Invalid power option.\n";
+        std::cout << "Invalid power option. Use on or off.\n";
         ReleaseMonitors(monitors);
         return;
     }
@@ -189,8 +168,29 @@ bool IsValidOption(const std::string& input)
     return false;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    if (argc > 1) {
+        std::string command = argv[1];
+
+        if (command == "display" && argc == 2) {
+            DisplayMonitors();
+        }
+        else if (command == "power" && argc == 4) {
+            PowerMonitor(argv[2], argv[3]);
+        }
+        else {
+            std::cerr
+                << "Usage:\n"
+                << "  " << argv[0] << " display\n"
+                << "  " << argv[0]
+                << " power <monitor number> <on|off>\n";
+            return 1;
+        }
+
+        return 0;
+    }
+
     bool running = true;
 
     while (running) {
@@ -210,7 +210,20 @@ int main()
             DisplayMonitors();
         }
         else if (answer == options[1]) {
-            PowerMonitor();
+            DisplayMonitors();
+
+            std::string selection;
+            std::string action;
+
+            std::cout << "Select a monitor number: ";
+            if (!(std::cin >> selection))
+                break;
+
+            std::cout << "Enter on or off: ";
+            if (!(std::cin >> action))
+                break;
+
+            PowerMonitor(selection, action);
         }
         else if (answer == options[2]) {
             running = false;
