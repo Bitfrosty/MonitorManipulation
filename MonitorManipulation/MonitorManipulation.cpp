@@ -168,67 +168,109 @@ bool IsValidOption(const std::string& input)
     return false;
 }
 
+void PrintHelp()
+{
+    std::cout
+        << "MonitorPower - Windows Monitor Power Utility\n"
+        << "\n"
+        << "USAGE\n"
+        << "  MonitorPower.exe <command> [options]\n"
+        << "\n"
+        << "COMMANDS\n"
+        << "  display\n"
+        << "    List all detected physical monitors.\n"
+        << "\n"
+        << "  power <monitor> <on|off>\n"
+        << "    Turn a specific monitor on or off.\n"
+        << "\n"
+        << "  interactive\n"
+        << "    Turn on interactive selection mode.\n"
+        << "\n"
+        << "  help\n"
+        << "    Show this help information.\n"
+        << "\n"
+        << "EXAMPLES\n"
+        << "  MonitorPower.exe display\n"
+        << "  MonitorPower.exe power 1 off\n"
+        << "  MonitorPower.exe power 1 on\n"
+        << "  MonitorPower.exe interactive\n"
+        << "  MonitorPower.exe help\n"
+        << "\n"
+        << "NOTES\n"
+        << "  - Monitor numbers start at 1.\n"
+        << "  - Requires a DDC/CI compatible monitor.\n"
+        << "  - Some monitors may not support power control.\n"
+        << "  - Power-on may not work after powering off.\n";
+}
+
 int main(int argc, char* argv[])
 {
-    if (argc > 1) {
-        std::string command = argv[1];
+    if (argc == 1) {
+        PrintHelp();
+        return 0;
+    }
 
-        if (command == "display" && argc == 2) {
-            DisplayMonitors();
-        }
-        else if (command == "power" && argc == 4) {
-            PowerMonitor(argv[2], argv[3]);
-        }
-        else {
-            std::cerr
-                << "Usage:\n"
-                << "  " << argv[0] << " display\n"
-                << "  " << argv[0]
-                << " power <monitor number> <on|off>\n";
-            return 1;
+    std::string command = argv[1];
+
+    if (command == "help" && argc == 2) {
+        PrintHelp();
+        return 0;
+    }
+
+    if (command == "display" && argc == 2) {
+        DisplayMonitors();
+        return 0;
+    }
+
+    if (command == "power" && argc == 4) {
+        PowerMonitor(argv[2], argv[3]);
+        return 0;
+    }
+
+    if (command == "interactive" && argc == 2) {
+        bool running = true;
+
+        while (running) {
+            std::string answer;
+
+            std::cout << "\nSelect an option (display, power, exit): ";
+
+            if (!(std::cin >> answer))
+                break;
+
+            if (!IsValidOption(answer)) {
+                std::cout << "Option not valid!\n";
+                continue;
+            }
+
+            if (answer == options[0]) {
+                DisplayMonitors();
+            }
+            else if (answer == options[1]) {
+                DisplayMonitors();
+
+                std::string selection;
+                std::string action;
+
+                std::cout << "Select a monitor number: ";
+                if (!(std::cin >> selection))
+                    break;
+
+                std::cout << "Enter on or off: ";
+                if (!(std::cin >> action))
+                    break;
+
+                PowerMonitor(selection, action);
+            }
+            else if (answer == options[2]) {
+                running = false;
+            }
         }
 
         return 0;
     }
 
-    bool running = true;
-
-    while (running) {
-        std::string answer;
-
-        std::cout << "\nSelect an option (display, power, exit): ";
-
-        if (!(std::cin >> answer))
-            break;
-
-        if (!IsValidOption(answer)) {
-            std::cout << "Option not valid!\n";
-            continue;
-        }
-
-        if (answer == options[0]) {
-            DisplayMonitors();
-        }
-        else if (answer == options[1]) {
-            DisplayMonitors();
-
-            std::string selection;
-            std::string action;
-
-            std::cout << "Select a monitor number: ";
-            if (!(std::cin >> selection))
-                break;
-
-            std::cout << "Enter on or off: ";
-            if (!(std::cin >> action))
-                break;
-
-            PowerMonitor(selection, action);
-        }
-        else if (answer == options[2]) {
-            running = false;
-        }
-    }
-
-    return 0;
+    std::cerr << "Invalid command or arguments.\n\n";
+    PrintHelp();
+    return 1;
 }
